@@ -5,21 +5,21 @@ uses Step1.Parser
 uses Step1.CodeWriter
 uses Step1.CommandType
 
-//  עדכני כאן את הנתיב לתיקייה targil1 שיצרת
+// Update the path to the targil1 directory you created here
 var inputPath = "C:\\Users\\MeytalAmar\\GosuCompiler\\Tests\\targil1"
 
 var inputEntry = new File(inputPath)
 var filesToProcess : List<File>
 var outputFile : File
 
-//  בדיקה האם הנתיב הוא תיקייה או קובץ בודד
+// Check if the path is a directory or a single file
 if (inputEntry.isDirectory()) {
-  // אם זו תיקייה, ניקח את כל קבצי ה-vm שבתוכה
+  // If it is a directory, take all the .vm files within it
   filesToProcess = inputEntry.listFiles().toList().where( \ f -> f.Name.endsWith(".vm") )
-  // שם קובץ הפלט יהיה כשם התיקייה
+  // The output file name will be the same as the directory name
   outputFile = new File(inputEntry.Path + "\\" + inputEntry.Name + ".asm")
 } else {
-  // אם זה קובץ בודד
+  // If it is a single file
   filesToProcess = {inputEntry}
   var outputFileName = inputPath.contains(".")
       ? inputPath.substring(0, inputPath.lastIndexOf(".")) + ".asm"
@@ -27,10 +27,10 @@ if (inputEntry.isDirectory()) {
   outputFile = new File(outputFileName)
 }
 
-//  יצירת CodeWriter אחד עבור קובץ הפלט המאוחד
+// Create one CodeWriter for the combined output file
 var writer = new CodeWriter(outputFile)
 
-//  מעבר על כל הקבצים ותרגומם לאותו קובץ
+// Iterate through all files and translate them into the same file
 for (file in filesToProcess) {
   print("Processing file: " + file.Name)
   var lines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8)

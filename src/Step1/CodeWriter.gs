@@ -5,16 +5,17 @@ uses java.io.PrintWriter
 
 class CodeWriter {
   var _writer : PrintWriter
-  var _labelCounter : int = 0
-  var _fileName : String
+  var _labelCounter : int = 0 // Counter for creating unique labels for comparison commands
+  var _fileName : String     // File name for static variables
 
   construct(outputFile : File) {
     _writer = new PrintWriter(outputFile)
+    // Extracting the file name without the extension for static variables
     _fileName = outputFile.Name.substring(0, outputFile.Name.lastIndexOf("."))
   }
 
   function writeArithmetic(command : String) {
-    _writer.println("// " + command)
+    _writer.println("// " + command) // Printing the original command as a comment
 
     if (command == "add") {
       binaryOp("M=D+M")
@@ -35,48 +36,48 @@ class CodeWriter {
     } else if (command == "lt") {
       compareOp("JLT")
     } else if (command == "compare3") {
-      writeCompare3() // הקריאה לפקודה החדשה
+      writeCompare3() // Calling the new command
     }
   }
 
-  // מימוש הפקודה compare3: בדיקה האם z < y < x
+  // Implementation of the compare3 command: checks if z < y < x
   private function writeCompare3() {
     var labelFalse = "COMP3_FALSE_" + _labelCounter
     var labelEnd = "COMP3_END_" + _labelCounter
     _labelCounter++
 
-    // 1. שליפת x ל-D
+    // 1. Popping x into D
     popStackToD() // D = x
 
-    // 2. השוואה בין y ל-x (נמצא ב-SP-1)
+    // 2. Comparing y and x (found at SP-1)
     _writer.println("@SP")
     _writer.println("A=M-1")
     _writer.println("D=M-D") // D = y - x
     _writer.println("@" + labelFalse)
-    _writer.println("D;JGE") // אם y >= x קפוץ לשקר
+    _writer.println("D;JGE") // If y >= x jump to false
 
-    // 3. שליפת y ל-D (כדי לעבור לבדוק את z)
+    // 3. Popping y into D (to check z)
     popStackToD() // D = y
 
-    // 4. השוואה בין z ל-y (נמצא ב-SP-1)
+    // 4. Comparing z and y (found at SP-1)
     _writer.println("@SP")
     _writer.println("A=M-1")
     _writer.println("D=M-D") // D = z - y
     _writer.println("@" + labelFalse)
-    _writer.println("D;JGE") // אם z >= y קפוץ לשקר
+    _writer.println("D;JGE") // If z >= y jump to false
 
-    // מקרה אמת: z < y < x
+    // True case: z < y < x
     _writer.println("@SP")
     _writer.println("A=M-1")
-    _writer.println("M=1") // דחיפת 1 לפי דף המשימה
+    _writer.println("M=1") // Pushing 1 according to the task sheet
     _writer.println("@" + labelEnd)
     _writer.println("0;JMP")
 
-    // מקרה שקר
+    // False case
     _writer.println("(" + labelFalse + ")")
     _writer.println("@SP")
     _writer.println("A=M-1")
-    _writer.println("M=0") // דחיפת 0
+    _writer.println("M=0") // Pushing 0
 
     _writer.println("(" + labelEnd + ")")
   }
