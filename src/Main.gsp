@@ -1,12 +1,12 @@
 uses java.nio.file.Files
 uses java.nio.charset.StandardCharsets
 uses java.io.File
-uses Step1.Parser
-uses Step1.CodeWriter
-uses Step1.CommandType
+uses VMTranslator.Parser
+uses VMTranslator.CodeWriter
+uses VMTranslator.CommandType
 
 // Update the path to the targil1 directory you created here
-var inputPath = "C:\\Users\\MeytalAmar\\GosuCompiler\\Tests\\targil1"
+var inputPath = "C:\\Users\\MeytalAmar\\GosuCompiler\\Tests\\FibonacciSeries"
 
 var inputEntry = new File(inputPath)
 var filesToProcess : List<File>
@@ -30,9 +30,18 @@ if (inputEntry.isDirectory()) {
 // Create one CodeWriter for the combined output file
 var writer = new CodeWriter(outputFile)
 
+var needsBootstrap = inputEntry.isDirectory() && filesToProcess.hasMatch(\ f -> f.Name.equalsIgnoreCase("Sys.vm"))
+if (needsBootstrap) {
+  writer.writeInit()
+}
+
 // Iterate through all files and translate them into the same file
 for (file in filesToProcess) {
   print("Processing file: " + file.Name)
+
+  var fileNameOnly = file.Name.substring(0, file.Name.lastIndexOf("."))
+  writer.setFileName(fileNameOnly)
+
   var lines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8)
   var parser = new Parser(lines)
 
@@ -43,6 +52,18 @@ for (file in filesToProcess) {
       writer.writeArithmetic(parser.Arg1)
     } else if (parser.CmdType == CommandType.C_PUSH || parser.CmdType == CommandType.C_POP) {
       writer.writePushPop(parser.CmdType, parser.Arg1, parser.Arg2)
+    } else if (parser.CmdType == CommandType.C_LABEL) {
+      writer.writeLabel(parser.Arg1)
+    } else if (parser.CmdType == CommandType.C_GOTO) {
+      writer.writeGoto(parser.Arg1)
+    } else if (parser.CmdType == CommandType.C_IF) {
+      writer.writeIf(parser.Arg1)
+    } else if (parser.CmdType == CommandType.C_FUNCTION) {
+      writer.writeFunction(parser.Arg1, parser.Arg2)
+    } else if (parser.CmdType == CommandType.C_CALL) {
+      writer.writeCall(parser.Arg1, parser.Arg2)
+    } else if (parser.CmdType == CommandType.C_RETURN) {
+      writer.writeReturn()
     }
   }
 }

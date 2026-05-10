@@ -1,25 +1,25 @@
 uses java.nio.file.Files
 uses java.nio.charset.StandardCharsets
 uses java.io.File
-uses Step1.Parser
-uses Step1.CodeWriter
-uses Step1.CommandType
+uses VMTranslator.Parser
+uses VMTranslator.CodeWriter
+uses VMTranslator.CommandType
 
-// 1. עדכני כאן את הנתיב לתיקייה targil1 שיצרת
-var inputPath = "C:\\Users\\MeytalAmar\\GosuCompiler\\Tests\\targil1"
+// Update the path to the targil1 directory you created here
+var inputPath = "C:\\Users\\MeytalAmar\\GosuCompiler\\Tests\\FibonacciSeries"
 
 var inputEntry = new File(inputPath)
 var filesToProcess : List<File>
 var outputFile : File
 
-// 2. בדיקה האם הנתיב הוא תיקייה או קובץ בודד
+// Check if the path is a directory or a single file
 if (inputEntry.isDirectory()) {
-  // אם זו תיקייה, ניקח את כל קבצי ה-vm שבתוכה
+  // If it is a directory, take all the .vm files within it
   filesToProcess = inputEntry.listFiles().toList().where( \ f -> f.Name.endsWith(".vm") )
-  // שם קובץ הפלט יהיה כשם התיקייה
+  // The output file name will be the same as the directory name
   outputFile = new File(inputEntry.Path + "\\" + inputEntry.Name + ".asm")
 } else {
-  // אם זה קובץ בודד
+  // If it is a single file
   filesToProcess = {inputEntry}
   var outputFileName = inputPath.contains(".")
       ? inputPath.substring(0, inputPath.lastIndexOf(".")) + ".asm"
@@ -27,12 +27,25 @@ if (inputEntry.isDirectory()) {
   outputFile = new File(outputFileName)
 }
 
-// 3. יצירת CodeWriter אחד עבור קובץ הפלט המאוחד
+// Create one CodeWriter for the combined output file
 var writer = new CodeWriter(outputFile)
 
-// 4. מעבר על כל הקבצים ותרגומם לאותו קובץ
+
+var needsBootstrap = inputEntry.isDirectory() && filesToProcess.hasMatch(\ f -> f.Name.equalsIgnoreCase("Sys.vm"))
+
+if (needsBootstrap) {
+  writer.writeInit()
+}
+
+
+
+// Iterate through all files and translate them into the same file
 for (file in filesToProcess) {
   print("Processing file: " + file.Name)
+
+  var fileNameOnly = file.Name.substring(0, file.Name.lastIndexOf("."))            //--
+  writer.setFileName(fileNameOnly)                                                 //---
+
   var lines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8)
   var parser = new Parser(lines)
 
@@ -43,6 +56,18 @@ for (file in filesToProcess) {
       writer.writeArithmetic(parser.Arg1)
     } else if (parser.CmdType == CommandType.C_PUSH || parser.CmdType == CommandType.C_POP) {
       writer.writePushPop(parser.CmdType, parser.Arg1, parser.Arg2)
+    } else if (parser.CmdType == CommandType.C_LABEL) {               ///------------ מפה
+      writer.writeLabel(parser.Arg1) // [cite: 586]
+    } else if (parser.CmdType == CommandType.C_GOTO) {
+      writer.writeGoto(parser.Arg1) // [cite: 587]
+    } else if (parser.CmdType == CommandType.C_IF) {
+      writer.writeIf(parser.Arg1) // [cite: 588]
+    } else if (parser.CmdType == CommandType.C_FUNCTION) {
+      writer.writeFunction(parser.Arg1, parser.Arg2) // [cite: 589]
+    } else if (parser.CmdType == CommandType.C_CALL) {
+      writer.writeCall(parser.Arg1, parser.Arg2) // [cite: 589]
+    } else if (parser.CmdType == CommandType.C_RETURN) {
+      writer.writeReturn() // [cite: 589]
     }
   }
 }
