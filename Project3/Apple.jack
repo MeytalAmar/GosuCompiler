@@ -1,0 +1,181 @@
+class Apple {
+	
+	field int x, y; // screen location of the center of the apple
+	field int radius; // radius of this apple, in pixels
+	field int angle; // angle of this apple
+
+    /** Constructs and draws a new apple with a given location and size. */
+    constructor Apple new(int ax, int ay, int aradius) {
+		let x = ax;
+		let y = ay;
+		let radius = aradius;
+		let angle=0;
+		do draw();
+		return this;
+    }
+
+    /** Disposes this apple. */
+    method void dispose() {
+		do Memory.deAlloc(this);
+		return;
+    }
+
+    /** Draws this apple in its current (x,y) location */
+    method void draw() {
+		// Draws the apple using the color black
+        do Screen.setColor(true);
+        if ((angle = 0) | (angle = 180))  {
+        do Screen.drawCircle(x - 4, y, radius);
+        do Screen.drawCircle(x + 4, y, radius);
+
+        }
+
+        if ((angle = 90) | (angle = 270)) {
+            do Screen.drawCircle(x, y - 4, radius);
+            do Screen.drawCircle(x, y + 4, radius);
+        }
+        if (angle = 0) {
+            do Screen.drawLine(x, y - radius, x - 5, y - radius - 5);
+        }
+
+        if (angle = 90) {
+            do Screen.drawLine(x + radius, y, x + radius + 5, y - 5);
+        }
+
+        if (angle = 180) {
+            do Screen.drawLine(x, y + radius, x - 5, y + radius + 5);
+        }
+
+        if (angle = 270) {
+            do Screen.drawLine(x - radius, y, x - radius - 5, y - 5);
+        }
+
+        return;
+    }
+
+    /** Erases this apple. */
+    method void erase() {
+		// Draws the apple using the color white (background color)
+        do Screen.setColor(false);
+        if ((angle = 0) | (angle = 180))  {
+        do Screen.drawCircle(x - 4, y, radius);
+        do Screen.drawCircle(x + 4, y, radius);
+
+        }
+
+        if ((angle = 90) | (angle = 270)) {
+            do Screen.drawCircle(x, y - 4, radius);
+            do Screen.drawCircle(x, y + 4, radius);
+        }
+        if (angle = 0) {
+            do Screen.drawLine(x, y - radius, x - 5, y - radius - 5);
+        }
+
+        if (angle = 90) {
+            do Screen.drawLine(x + radius, y, x + radius + 5, y - 5);
+        }
+
+        if (angle = 180) {
+            do Screen.drawLine(x, y + radius, x - 5, y + radius + 5);
+        }
+
+        if (angle = 270) {
+            do Screen.drawLine(x - radius, y, x - radius - 5, y - 5);
+        }
+
+        return;
+    }
+
+    /** Moves this apple up by 2 pixels (if possible). */
+    method void moveUp() {
+		//checks if the apple is down enough to be moved up
+        if ((y - radius - 7) > 0) {
+			// Erases the current apple
+            do erase();
+            //y is 2 pixels higher
+            let y = y - 2;
+            // Draws the new apple
+            do draw();
+        }
+		return;
+    }
+
+    /** Moves this apple down by 2 pixels (if possible). */
+    method void moveDown() {
+		//checks if the apple is up enough to be moved up
+        if ((y + radius + 7) < 256) {
+			// Erases the current apple
+			do erase();
+			//y is 2 pixels lower
+			let y = y + 2;
+			// Draws the new apple
+            do draw();
+        }
+        return;
+    }
+
+
+    /** Moves this apple 2 pixels left (if possible). */
+		method void moveLeft() {
+			//checks if there is enough space to move the apple left
+			if ((x - radius - 7) > 0) {
+				// Erases the current apple
+				do erase();
+				//x is 2 pixels more left
+				let x = x-2;
+				// Draws the new apple
+				do draw();
+			}
+			return;
+    }
+
+    /** Moves this apple 2 pixels right (if possible). */
+		method void moveRight() {
+			//checks if there is enough space to move the apple right
+			if ((x + radius + 7) < 512) {
+				// Erases the current apple
+                do erase();
+                //x is 2 pixels more right
+                let x = x+2;
+                // Draws the new apple
+                do draw();
+            }
+			return;
+		}
+
+	/** Increments the apple size by 2 pixels (if possible). */
+    method void incSize() {
+		//checks if the incremented apple is not too big for the screen
+		if (((x - radius - 8) > 0) & ((x + radius + 8) < 512) &
+           ((y - radius - 8) > 0) & ((y + radius + 8) < 256)) {
+            do erase();
+            let radius = radius + 2;
+            do draw();
+        }
+        return;
+    }
+
+    /** Decrements the apple size by 2 pixels (if possible). */
+    method void decSize() {
+		if (radius > 5) {
+			do erase();
+			let radius = radius - 2;
+			do draw();
+        }
+		return;
+    }
+
+	/** Rotate the apple */
+	method void rotate() {
+		//erase the current apple
+		do erase();
+        //change the angle
+		let angle = angle + 90;
+		if (angle = 360) {
+			let angle = 0;
+        }
+
+		do draw();
+        return;
+        }
+}

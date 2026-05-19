@@ -1,0 +1,135 @@
+class Main {
+    function void main() {
+		var Apple myApple;
+        var Moon myMoon;
+        var int key;
+        var int counter;
+        var int selection;
+        var boolean play;
+
+        let play = true;
+
+        while (play) {
+            do Screen.clearScreen();
+            let counter = 0;
+            let key = 0;
+            let selection = 0;
+
+            //moves the cursor to write in the center left side of the screen
+            do Output.moveCursor(10, 15);
+            //ask the user to choose which shape to play with
+            do Output.printString("Welcome! Choose your object:");
+            do Output.moveCursor(12, 15);
+            do Output.printString("Press 1 for Apple or 2 for Moon");
+
+            //wait for the response of the user
+            while (selection = 0) {
+				let key = Keyboard.keyPressed();
+                if (key = 49) { let selection = 1; } // '1'
+                if (key = 50) { let selection = 2; } // '2'
+			}
+
+            //once the choice is made, clear the screen and move the cursor to its initial position
+            do Screen.clearScreen();
+            do Output.moveCursor(0, 0);
+
+            if (selection=1){
+				// Creates an apple in the center of the screen (x=256, y=128) with a radius of 10 pixels
+                let myApple = Apple.new(256, 128, 10);
+                do Output.printString("Playing with: Apple");
+            }
+            else {
+				//Creates a moon
+                let myMoon = Moon.new(256, 128, 20);
+                do Output.printString("Playing with: :Moon");
+            }
+			
+			// Waiting for the user to RELEASE the key from the selection screen
+            let key = Keyboard.keyPressed();
+            while (~(key = 0)) {
+                let key = Keyboard.keyPressed();
+            }
+
+            do Output.moveCursor(4, 0);
+            do Output.printString("Use arrows to move the shape , + or - to adjust the size, space key to rotate and Q to finish");
+
+			let key = 0;
+            //loop of actions
+            while (~(key = 81)) {   //key different of Q
+				// Wait until a key is pressed down
+                let key = 0;
+                while (key = 0) {
+                    let key = Keyboard.keyPressed();
+                }
+
+                if (key = 131) { // Up
+					if (selection=1){ do myApple.moveUp();} else {do myMoon.moveUp();}
+                    //count the steps
+                    let counter = counter + 1;
+				}
+
+                if (key = 133) { // Down
+                    if (selection=1){ do myApple.moveDown();} else{do myMoon.moveDown();}
+                    let counter = counter + 1;
+				}
+
+                if (key = 130) { // Left
+                    if (selection=1){ do myApple.moveLeft();} else{do myMoon.moveLeft();}
+                    let counter = counter + 1;
+				}
+
+                if (key = 132) { // Right
+                    if (selection=1){ do myApple.moveRight();} else{do myMoon.moveRight();}
+                    let counter = counter + 1;
+				}
+
+                if (key = 43) { // +
+                    if (selection = 1) { do myApple.incSize(); } else { do myMoon.incSize(); }
+                    let counter = counter + 1;
+                }
+
+                if (key = 45) { // -
+                    if (selection = 1) { do myApple.decSize(); } else { do myMoon.decSize(); }
+                    let counter = counter + 1;
+                }
+
+                if (key=32) { // space key to rotate
+                     if (selection = 1) { do myApple.rotate(); } else { do myMoon.rotate(); }
+					 let counter = counter + 1;
+                }
+				
+				let key = Keyboard.keyPressed();
+			}
+				do Screen.clearScreen();
+                do Output.moveCursor(10, 15);
+                do Output.printString("Round Finished!");
+                do Output.println();
+                do Output.moveCursor(12, 10);
+                do Output.printString("Object selection: ");
+                if (selection = 1) { do Output.printString("Apple"); }
+                else { do Output.printString("Moon"); }
+
+                do Output.moveCursor(14, 10);
+				do Output.printString("Total operations performed: ");
+                do Output.printInt(counter);
+
+                do Output.moveCursor(17, 10);
+                do Output.printString("Press R to Restart or ESC to Exit.");
+                        
+                let key = 0;
+                while (key = 0) { let key = Keyboard.keyPressed(); }
+
+				if (selection = 1) { do myApple.dispose(); } else { do myMoon.dispose(); }
+				if (key = 82) { // R
+					let play = true;
+                }
+				else {
+					let play = false;
+				}
+		}	
+        do Screen.clearScreen();
+        do Output.moveCursor(10, 25);
+        do Output.printString("Goodbye!");
+		return;           	
+    }
+}

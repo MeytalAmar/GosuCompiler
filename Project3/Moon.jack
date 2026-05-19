@@ -1,0 +1,114 @@
+class Moon {
+
+    field int x, y; 
+    field int radius; 
+    field int direction; 
+    field int actionCount; 
+
+    constructor Moon new(int Ax, int Ay, int Aradius) {
+        let x = Ax;
+        let y = Ay;
+        let radius = Aradius;
+        let direction = 0; 
+        let actionCount = 0; 
+        do draw(); 
+        return this; 
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void draw() {
+        do Screen.setColor(true);
+        do Screen.drawCircle(x, y, radius);
+        
+        do Screen.setColor(false);
+        if (direction = 0) { do Screen.drawCircle(x + (radius / 3), y, radius); }
+        if (direction = 1) { do Screen.drawCircle(x - (radius / 3), y, radius); }
+        if (direction = 2) { do Screen.drawCircle(x, y - (radius / 3), radius); }
+        if (direction = 3) { do Screen.drawCircle(x, y + (radius / 3), radius); }
+        return;
+    }
+
+    method void erase() {
+        do Screen.setColor(false);
+        do Screen.drawCircle(x, y, radius);
+        return;
+    }
+
+    method void moveUp() {
+        if ((y - radius) > 1) {
+            do erase();
+            let y = y - 2;
+            let actionCount = actionCount + 1;
+            do draw();
+        }
+        return;
+    }
+
+    method void moveDown() {
+        if ((y + radius) < 254) {
+            do erase();
+            let y = y + 2;
+            let actionCount = actionCount + 1;
+            do draw();
+        }
+        return;
+    }
+
+    method void moveLeft() {
+        if ((x - radius) > 1) {
+            do erase();
+            let x = x - 2;
+            let actionCount = actionCount + 1;
+            do draw();
+        }
+        return;
+    }
+
+    method void moveRight() {
+        if ((x + radius) < 510) {
+            do erase();
+            let x = x + 2;
+            let actionCount = actionCount + 1;
+            do draw();
+        }
+        return;
+    }
+
+    method void incSize() {
+        if (((x + radius) < 510) & ((x - radius) > 1) & ((y + radius) < 254) & ((y - radius) > 1)) {
+            do erase();
+            let radius = radius + 2;
+            let actionCount = actionCount + 1;
+            do draw();
+        }
+        return;
+    }
+
+    method void decSize() {
+        if (radius > 6) {
+            do erase();
+            let radius = radius - 2;
+            let actionCount = actionCount + 1;
+            do draw();
+        }
+        return;
+    }
+
+    method void rotate() {
+        do erase();
+        let direction = direction + 1;
+        if (direction > 3) {
+            let direction = 0;
+        }
+        do draw();
+        return;
+    }
+
+    method int getActionCount() {
+        return actionCount;
+    }
+}
