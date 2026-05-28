@@ -14,11 +14,11 @@ class CodeWriter {
     _fileName = outputFile.Name.substring(0, outputFile.Name.lastIndexOf("."))
   }
 
-  function setFileName(fileName : String) {  //----
+  function setFileName(fileName : String) {
     _fileName = fileName
   }
 
-  function writeInit() {                    //----
+  function writeInit() {
     _writer.println("// Bootstrap code")
     _writer.println("@256")
     _writer.println("D=A")
@@ -29,7 +29,7 @@ class CodeWriter {
 
   private function programFlow(operator: String, variable: String) {
     if (operator == "label") {
-      _writer.println("("  + variable + ")")//+ _fileName + "."
+      _writer.println("("  + variable + ")") //+ _fileName + "."
     } else if (operator == "goto") {
       _writer.println("@"  + variable) //+ _fileName + "."
       _writer.println("0;JMP")
@@ -130,8 +130,6 @@ class CodeWriter {
     _writer.println("A=M")
     _writer.println("0;JMP")
   }
-
-
 
   function writeArithmetic(command : String) {
     _writer.println("// " + command) // Printing the original command as a comment

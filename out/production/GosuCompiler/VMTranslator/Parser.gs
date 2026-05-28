@@ -15,16 +15,12 @@ class Parser {
 
   construct(rawLines : List<String>) {
     _commands = rawLines.map( \ line : String -> {
-      // מוצאים את המיקום של ה- // הראשון
       var commentIndex = line.indexOf("//")
-      // אם נמצא הערה, לוקחים רק את מה שלפניה. אם לא, לוקחים את כל השורה
       var noComment = (commentIndex != -1) ? line.substring(0, commentIndex) : line
       return noComment.trim()
     })
-        // מסננים שורות שהפכו לריקות אחרי הניקוי
         .where( \ line : String -> line.length() > 0 )
   }
-
 
 // The property (special for Gosu) checks if we arrived or not at the end of the file
   property get HasMoreCommands() : boolean {
@@ -43,7 +39,7 @@ class Parser {
     property get CmdType() : VMTranslator.CommandType {
       var firstWord = _currentParts[0]
 
-      // if the word is "push", it's C_PUSH
+      // if the word is "push", it's C_PUSH etc
       if (firstWord == "push") return C_PUSH
       if (firstWord == "pop")  return C_POP
       if (firstWord == "label") return C_LABEL
