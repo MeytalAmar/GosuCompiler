@@ -31,3 +31,4 @@ if (inputEntry.isDirectory()) {
 else{
   print("Error, the path is not a directory")
 }
+//write the parsing action!!!
