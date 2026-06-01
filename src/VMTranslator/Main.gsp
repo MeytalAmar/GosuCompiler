@@ -38,7 +38,7 @@ if (needsBootstrap) {
 // Iterate through all files and translate them into the same file
 for (file in filesToProcess) {
   print("Processing file: " + file.Name)
-  _writer = new PrintWriter(outputFile)
+  //_writer = new PrintWriter(outputFile)
   var fileNameOnly = file.Name.substring(0, file.Name.lastIndexOf("."))
   writer.setFileName(fileNameOnly)
 

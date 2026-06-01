@@ -29,7 +29,7 @@ class Tokenizing {
    _reader = new BufferedReader(new FileReader(this._jackFile))
  }
 
-  function writeTokens (jackFile : File , outputFile: File) {
+  function writeTokens () {
 
     _writer.println("<tokens>")
     //creates a temp to keep all the characters read
@@ -50,21 +50,19 @@ class Tokenizing {
           var word = temp.toString()
           //if temp is a keyword
           if (KEYWORDS.contains(word)) {
-            _writer.println("<keyword>" + temp + "</keyword>")
+            _writer.println("<keyword> " + temp + " </keyword>")
           }
-
           //if it's a number (starts with a digit)
           else if (Character.isDigit(word.charAt(0))) {
             _writer.println("<integerConstant> " + word + " </integerConstant>")
           }
           //else,  it's an identifier
           else {
-            _writer.println("<identifier>" + temp + "</identifier>")
+            _writer.println("<identifier> " + temp + " </identifier>")
           }
           // empty temp
           temp.setLength(0)
         }
-
 
         //if its a symbol
         if (SYMBOLS.contains(java.lang.String.valueOf(c))) {
@@ -75,7 +73,6 @@ class Tokenizing {
           } else if (c == '&') {
             _writer.println("<symbol> &amp; </symbol>")
           }
-
           //checks if it's a comment
           else if (c == '/') {
             //checks the next character
@@ -125,13 +122,14 @@ class Tokenizing {
               }
             }
             else {
+              //slash at end of file
               _writer.println("<symbol> / </symbol>")
             }
           }
 
           //if it's another symbol
           else{
-            _writer.println("<symbol> " +c + " </symbol>")
+            _writer.println("<symbol> " + c + " </symbol>")
           }
         }
         //if it's a string constant
@@ -155,19 +153,13 @@ class Tokenizing {
 
       }
 
-
       //read the next character
       intValue = _reader.read()
     }
-
 
 //end of file
     _writer.println("</tokens>")
     _reader.close()
     _writer.close()
   }
-
-
-
-
 }
