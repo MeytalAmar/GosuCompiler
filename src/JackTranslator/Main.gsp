@@ -16,7 +16,6 @@ if (inputEntry.isDirectory()) {
   filesToProcess = inputEntry.listFiles().toList().where(\f -> f.Name.endsWith(".jack"))
 
   for (jackFile in filesToProcess) {
-    // --- PART 1: Tokenizer Setup ---
     // The output file name will be xxxT.xml if the file is named xxx.jack
     var outputFilePath = jackFile.Path.substring(0, jackFile.Path.length() - 5) + "T.xml"
     outputFile = new File(outputFilePath)

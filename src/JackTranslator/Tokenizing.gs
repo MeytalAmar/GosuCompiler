@@ -157,7 +157,7 @@ class Tokenizing {
       intValue = _reader.read()
     }
 
-//end of file
+    //end of file
     _writer.println("</tokens>")
     _reader.close()
     _writer.close()

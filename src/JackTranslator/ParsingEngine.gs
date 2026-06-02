@@ -67,7 +67,7 @@ class ParsingEngine {
   function process( expectedValue : String){
     var token = currentToken()
     if(expectedValue == token.Value){
-      _writer.println("<" + token.Type +">" + token.Value + "</" + token.Type + ">" ) //----------------------------
+      _writer.println("<" + token.Type +">" + token.Value + "</" + token.Type + ">" )
     }
     else{
       print("Error : not expected token")
