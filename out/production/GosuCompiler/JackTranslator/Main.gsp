@@ -41,6 +41,7 @@ if (inputEntry.isDirectory()) {
 
     // Call the root rule function to start the parsing process
     parser.compileClass()
+
   }
 }
 else {

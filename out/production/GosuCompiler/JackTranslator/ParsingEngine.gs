@@ -2,7 +2,9 @@ package JackTranslator
 uses java.io.File
 uses java.io.FileReader
 uses java.io.PrintWriter
+uses java.util.Set
 uses java.io.BufferedReader
+uses JackTranslator.Token
 
 
 class ParsingEngine {
@@ -40,15 +42,14 @@ class ParsingEngine {
       // ignores the first and last tokens
       if (line != "<tokens>" and line != "</tokens>" and line.length() > 0) {
 
-        // get the token type
+        // Extract the type
         var type = line.substring(line.indexOf("<") + 1, line.indexOf(">"))
 
-        // get the token value
+        // Extract the value
         var startValue = line.indexOf(">") + 1
         var endValue = line.lastIndexOf("</")
         var value = line.substring(startValue, endValue).trim()
 
-        // fix special xml symbols back to regular symbols
         if (value == "&amp;")  value = "&"
         if (value == "&lt;")   value = "<"
         if (value == "&gt;")   value = ">"
@@ -75,7 +76,18 @@ class ParsingEngine {
     return null
   }
 
-  // check if the token matches the expected value and move forward
+  // function which receives a terminal and write the token in the output file and readthe next token from the input file
+  /*function process( expectedValue : String){
+    var token = currentToken()
+    if(expectedValue == token.Value){
+      _writer.println("<" + token.Type +">" + token.Value + "</" + token.Type + ">" )
+    }
+    else{
+      print("Error : not expected token")
+      return
+    }
+    _pointer++
+  }*/
   function process(expectedValue : String) {
     var token = currentToken()
     if (expectedValue != token.Value) {
@@ -85,11 +97,31 @@ class ParsingEngine {
     _pointer++
   }
 
-  // compile a complete class
+   // compile the class non terminal
+  /*function compileClass(){
+    _writer.println("<class>")
+
+    process("class")
+    // Extracts and stores the current class name (e.g., "Main", "Square")
+    var className = currentToken().Value
+    process(className)
+    process("{")
+
+    while (currentToken().Value == "static" || currentToken().Value == "field") {
+      compileClassVarDec()
+    }
+    while (currentToken().Value == "constructor" || currentToken().Value == "function" || currentToken().Value == "method") {
+      // Passes the class name to the subroutine compiler for 'this' pointer setup
+      compileSubroutine(className)
+    }
+    process("}")
+    _writer.println("</class>")
+    _writer.close()
+  }*/
+
   function compileClass(){
     process("class")
 
-    // save the name of the class
     _currentClassName = currentToken().Value
     process(_currentClassName)
     process("{")
@@ -105,25 +137,47 @@ class ParsingEngine {
 
     _vmWriter.close()
   }
+  // compile the classVarDec non terminal
+  /*function compileClassVarDec(){
+    _writer.println("<classVarDec>")
 
-  // compile class variables (static or field)
-  function compileClassVarDec(){
-
-    // get variable kind (static / field)
     var kind = currentToken().Value
     process(kind)
 
-    // get variable type (int, boolean, char, or class name)
     var type = currentToken().Value
     process(type)
 
     var name = currentToken().Value
     process(name)
 
-    // add the variable to the class symbol table
+    // registers the variable in the symbol table
     _symbolTable.define(name, type, kind)
 
-    // handle extra variables separated by commas on the same line
+    while(currentToken().Value == ",") {
+      process(",")
+      var name2 = currentToken().Value
+      process(name2)
+
+      _symbolTable.define(name2, type, kind)
+    }
+
+    process(";")
+    _writer.println("</classVarDec>")
+  }*/
+  // compile the classVarDec non terminal
+  function compileClassVarDec(){
+
+    var kind = currentToken().Value
+    process(kind)
+
+    var type = currentToken().Value
+    process(type)
+
+    var name = currentToken().Value
+    process(name)
+
+    _symbolTable.define(name, type, kind)
+
     while(currentToken().Value == ",") {
       process(",")
 
@@ -135,22 +189,41 @@ class ParsingEngine {
     process(";")
   }
 
-  // compile a method, function, or constructor
-  function compileSubroutine(className : String){
+  // compile the subroutine non terminal
+  /*function compileSubroutine(className : String){
+    _writer.println("<subroutineDec>")
 
-    // get subroutine kind (constructor, function, or method)
     var kind = currentToken().Value
     process(kind)
 
-    // get return type
     var type = currentToken().Value
     process(type)
 
-    // get subroutine name
     var name = currentToken().Value
     process(name)
 
-    // reset the local symbol table for this new subroutine
+    // resets the subroutine symbol table and injects 'this' if it is a method
+    _symbolTable.startSubroutine(kind, className)
+
+    process("(")
+    compileParameterList()
+    process(")")
+    compileSubroutineBody()
+
+    _writer.println("</subroutineDec>")
+  }*/
+  // compile the subroutine non terminal
+  function compileSubroutine(className : String){
+
+    var kind = currentToken().Value
+    process(kind)
+
+    var type = currentToken().Value
+    process(type)
+
+    var name = currentToken().Value
+    process(name)
+
     _symbolTable.startSubroutine(kind, className)
 
     process("(")
@@ -158,13 +231,12 @@ class ParsingEngine {
     process(")")
 
     var fullSubroutineName = className + "." + name
+
     compileSubroutineBody(fullSubroutineName, kind)
   }
 
-  // compile the arguments inside the function brackets
   function compileParameterList(){
 
-    // check if there are any parameters at all
     if (currentToken().Value != ")") {
       var type = currentToken().Value
       process(type)
@@ -172,10 +244,8 @@ class ParsingEngine {
       var name = currentToken().Value
       process(name)
 
-      // add the first parameter as an argument to the symbol table
       _symbolTable.define(name, type, "argument")
 
-      // handle more parameters if they are separated by commas
       while (currentToken().Value == ",") {
         process(",")
 
@@ -189,44 +259,99 @@ class ParsingEngine {
       }
     }
   }
+  /*function compileParameterList(){
+    _writer.println("<parameterList>")
 
-  // compile the actual body of the subroutine
+    if (currentToken().Value != ")") {
+      var type = currentToken().Value
+      process(type)
+
+      var name = currentToken().Value
+      process(name)
+
+      // registers the parameter as an argument in the symbol table
+      _symbolTable.define(name, type, "argument")
+
+      while (currentToken().Value == ",") {
+        process(",")
+        var type2 = currentToken().Value
+        process(type2)
+
+        var name2 = currentToken().Value
+        process(name2)
+
+        _symbolTable.define(name2, type2, "argument")
+      }
+    }
+    _writer.println("</parameterList>")
+  }*/
+
+
+  /*function compileSubroutineBody(){
+    _writer.println("<subroutineBody>")
+    process("{")
+
+    while (currentToken().Value == "var") {
+      compileVarDec()
+    }
+    compileStatements()
+    process("}")
+    _writer.println("</subroutineBody>")
+  }*/
   function compileSubroutineBody(fullSubroutineName : String, kind : String){
     process("{")
 
-    // compile all local variable declarations (var ...)
     while (currentToken().Value == "var") {
       compileVarDec()
     }
 
-    // count how many local variables this subroutine has
     var nLocals = _symbolTable.varCount("var")
 
-    // write the official VM function command
     _vmWriter.writeFunction(fullSubroutineName, nLocals)
 
-    // if it is a constructor, allocate memory for the new object
     if (kind == "constructor") {
       var nFields = _symbolTable.varCount("field")
       _vmWriter.writePush("constant", nFields)
       _vmWriter.writeCall("Memory.alloc", 1)
       _vmWriter.writePop("pointer", 0)
     }
-    // if it is a method, set 'this' pointer to argument 0
     else if (kind == "method") {
       _vmWriter.writePush("argument", 0)
       _vmWriter.writePop("pointer", 0)
     }
-    // compile all the statements inside the subroutine
     compileStatements()
+
     process("}")
   }
 
-  // compile local variable declarations inside a subroutine
+  /*function compileVarDec(){
+    _writer.println("<varDec>")
+    process("var")
+
+    var type = currentToken().Value
+    process(type)
+
+    var name = currentToken().Value
+    process(name)
+
+    // Adds the local variable to the symbol table
+    _symbolTable.define(name, type, "var")
+
+    while(currentToken().Value == ",") {
+      process(",")
+      var name2 = currentToken().Value
+      process(name2)
+
+      _symbolTable.define(name2, type, "var")
+    }
+
+    process(";")
+    _writer.println("</varDec>")
+  }*/
+
   function compileVarDec(){
     process("var")
 
-    // get variable type
     var type = currentToken().Value
     process(type)
 
@@ -246,12 +371,30 @@ class ParsingEngine {
     process(";")
   }
 
-  // compile a block of statements inside loops, conditions, or functions
+  /*function compileStatements(){
+    _writer.println("<statements>")
+
+    var next = currentToken().Value
+    while (next == "let" || next == "if" || next == "while" || next == "do" || next == "return") {
+      if(next == "let")
+        compileLet()
+      else if (next == "if")
+        compileIf()
+      else if (next == "while")
+        compileWhile()
+      else if (next == "do")
+        compileDo()
+      else if (next == "return")
+        compileReturn()
+
+      next = currentToken().Value
+    }
+    _writer.println("</statements>")
+  }*/
   function compileStatements(){
 
     var next = currentToken().Value
 
-    // loop through all statements as long as we find valid jack keywords
     while (next == "let" || next == "if" || next == "while" || next == "do" || next == "return") {
       if(next == "let")
         compileLet()
@@ -268,7 +411,51 @@ class ParsingEngine {
     }
   }
 
-  // compile a let statement (variable assignment)
+  /*function compileLet(){
+    _writer.println("<letStatement>")
+    process("let")
+
+    var name = currentToken()
+    process(name.Value)
+
+    if (currentToken().Value == "[") {
+      process("[")
+      compileExpression()
+      process("]")
+    }
+
+    process("=")
+    compileExpression()
+    process(";")
+
+    _writer.println("</letStatement>")
+  }*/
+
+  /*function compileLet(){
+    process("let")
+
+    var name = currentToken().Value
+    process(name)
+    process("=")
+
+    compileExpression()
+
+    process(";")
+
+    var category = _symbolTable.catOf(name)
+    var index = _symbolTable.indexOf(name)
+
+    var segment = ""
+    if (category == "var") {
+      segment = "local"
+    } else if (category == "field") {
+      segment = "this"
+    } else {
+      segment = category
+    }
+
+    _vmWriter.writePop(segment, index)
+  }*/
   function compileLet(){
     process("let")
 
@@ -276,14 +463,13 @@ class ParsingEngine {
     process(name)
 
     var isArray = false
-    // check if we are assigning a value to an array index like arr[i]
     if (currentToken().Value == "[") {
       isArray = true
       process("[")
       compileExpression()
       process("]")
 
-      // find array details and push its base address
+      // push base address of array
       var seg = _symbolTable.catOf(name)
       var idx = _symbolTable.indexOf(name)
       if (seg == "var") seg = "local"
@@ -296,40 +482,54 @@ class ParsingEngine {
     compileExpression()
     process(";")
 
-    // if it is an array, save the value into the calculated address
     if (isArray) {
-      _vmWriter.writePop("temp", 0)     // save expression result in temp 0
-      _vmWriter.writePop("pointer", 1)  // set 'that' pointer to the array address
-      _vmWriter.writePush("temp", 0)    // push expression result back
-      _vmWriter.writePop("that", 0)    // store the value inside the array index
+      _vmWriter.writePop("temp", 0)
+      _vmWriter.writePop("pointer", 1)
+      _vmWriter.writePush("temp", 0)
+      _vmWriter.writePop("that", 0)
     } else {
-      // regular variable assignment
       var category = _symbolTable.catOf(name)
       var index = _symbolTable.indexOf(name)
       var segment = ""
       if (category == "var") segment = "local"
       else if (category == "field") segment = "this"
       else segment = category
-      _vmWriter.writePop(segment, index) // save the value in the variable segment
+      _vmWriter.writePop(segment, index)
     }
   }
 
-  // compile an if statement with an optional else block
+  /*function compileIf(){
+    _writer.println("<ifStatement>")
+    process("if")
+    process("(")
+    compileExpression()
+    process(")")
+    process("{")
+    compileStatements()
+    process("}")
+
+    if(currentToken().Value == "else") {
+      process("else")
+      process("{")
+      compileStatements()
+      process("}")
+    }
+    _writer.println("</ifStatement>")
+  }*/
+
   function compileIf(){
 
     process("if")
     process("(")
-    compileExpression()  // calculate the condition (true or false)
+    compileExpression()
     process(")")
 
-    // create unique labels for this if statement
     var labelNum = _ifLabelIndex
     _ifLabelIndex++
     var labelTrue = "IF_TRUE" + labelNum
     var labelFalse = "IF_FALSE" + labelNum
     var labelEnd = "IF_END" + labelNum
 
-    // check condition: if true go to true block, else go to false block
     _vmWriter.writeIf(labelTrue)
     _vmWriter.writeGoto(labelFalse)
 
@@ -338,7 +538,6 @@ class ParsingEngine {
     compileStatements()
     process("}")
 
-    // skip the else block when if is done
     _vmWriter.writeGoto(labelEnd)
 
     _vmWriter.writeLabel(labelFalse)
@@ -351,25 +550,33 @@ class ParsingEngine {
     _vmWriter.writeLabel(labelEnd)
   }
 
-  // compile a while loop statement
+  /*function compileWhile(){
+    _writer.println("<whileStatement>")
+    process("while")
+    process("(")
+    compileExpression()
+    process(")")
+    process("{")
+    compileStatements()
+    process("}")
+
+    _writer.println("</whileStatement>")
+  }*/
   function compileWhile(){
     process("while")
 
-    // create unique labels for this while loop
     var labelNum = _whileLabelIndex
     _whileLabelIndex++
 
     var labelExpression = "WHILE_EXP" + labelNum
     var labelEnd = "WHILE_END" + labelNum
 
-    // start point to re-evaluate the loop condition
     _vmWriter.writeLabel(labelExpression)
 
     process("(")
     compileExpression()
     process(")")
 
-    // if the condition is false (not true), exit the loop
     _vmWriter.writeArithmetic("not")
     _vmWriter.writeIf(labelEnd)
 
@@ -377,55 +584,85 @@ class ParsingEngine {
     compileStatements()
     process("}")
 
-    // jump back to check the condition again
     _vmWriter.writeGoto(labelExpression)
 
     _vmWriter.writeLabel(labelEnd)
   }
 
+  /*function compileDo(){
+    _writer.println("<doStatement>")
+    process("do")
+    compileSubroutineCall()
+    process(";")
+
+    _writer.println("</doStatement>")
+  }*/
   function compileDo(){
     process("do")
     compileSubroutineCall()
     process(";")
 
-    // do statement ignores the return value, so we pop it into temp 0 to clean the stack
     _vmWriter.writePop("temp", 0)
   }
 
+  /*function compileReturn(){
+    _writer.println("<returnStatement>")
+    process("return")
+    if(currentToken().Value != ";")
+      compileExpression()
+
+    process(";")
+
+    _writer.println("</returnStatement>")
+  }*/
   function compileReturn(){
     process("return")
 
-    // check if the function returns a value
     if(currentToken().Value != ";") {
-      compileExpression()  // calculate the return value and push it to stack
+      compileExpression()
     } else {
-      // void functions must push a dummy 0 value to the stack
       _vmWriter.writePush("constant", 0)
     }
     process(";")
-    // write the VM return command
+
     _vmWriter.writeReturn()
   }
 
-  // compile an expression (like x + 5 or a == b)
-  function compileExpression(){
-    // compile the first term
+  /*function compileExpression(){
+    _writer.println("<expression>")
     compileTerm()
 
-    // look for math or logical operators
+    while(currentToken().Value == "+" ||
+          currentToken().Value == "-" ||
+          currentToken().Value == "*" ||
+          currentToken().Value == "/" ||
+          currentToken().Value == "&amp;" ||
+          currentToken().Value == "|" ||
+          currentToken().Value == "&lt;" ||
+          currentToken().Value == "&gt;" ||
+          currentToken().Value == "=") {
+
+      var opToken = currentToken()
+      process(opToken.Value)
+
+      compileTerm()
+    }
+    _writer.println("</expression>")
+  }*/
+  function compileExpression(){
+    compileTerm()
+
     while(currentToken().Value == "+" || currentToken().Value == "-" ||
         currentToken().Value == "*" || currentToken().Value == "/" ||
         currentToken().Value == "&" || currentToken().Value == "&amp;" ||
         currentToken().Value == "|" || currentToken().Value == "<" ||
         currentToken().Value == ">" || currentToken().Value == "=") {
 
-      // get the operator and move forward
       var op = currentToken().Value
       process(op)
 
       compileTerm()
 
-      // write the matching VM command for this operator
       if (op == "+") {
         _vmWriter.writeArithmetic("add")
       } else if (op == "-") {
@@ -441,34 +678,66 @@ class ParsingEngine {
       } else if (op == "|") {
         _vmWriter.writeArithmetic("or")
       } else if (op == "*") {
-        // Jack doesn't have a multiplier command, so we call the OS Math library
         _vmWriter.writeCall("Math.multiply", 2)
       } else if (op == "/") {
-        // Jack doesn't have a divider command, so we call the OS Math library
         _vmWriter.writeCall("Math.divide", 2)
       }
     }
   }
 
-  // compile a single term (numbers, strings, variables, arrays, or function calls)
+  /*function compileTerm(){
+    _writer.println("<term>")
+
+    var token = currentToken()
+
+    if (token.Type == "integerConstant" || token.Type == "stringConstant") {
+      process(token.Value)
+    }
+    else if (token.Value == "true" || token.Value == "false" ||
+        token.Value == "null" || token.Value == "this") {
+      process(token.Value) // keywordConstant
+    }
+    else if (token.Value == "(") {
+      process("(")
+      compileExpression() // Nested expression inside parenthesis
+      process(")")
+    }
+    else if (token.Value == "-" || token.Value == "~") {
+      process(token.Value) // unaryOp
+      compileTerm()        // Recursively compile the term affected by the unary operator
+    }
+    else if (token.Type == "identifier") {
+      var nextToken = NextToken()
+
+      if (nextToken.Value == "[") {
+        process(token.Value)
+        process("[")
+        compileExpression()
+        process("]")
+      }
+      else if (nextToken.Value == "(" || nextToken.Value == ".") {
+        compileSubroutineCall()
+      }
+      else {
+        process(token.Value)
+      }
+    }
+    _writer.println("</term>")
+  }*/
   function compileTerm(){
     var token = currentToken()
 
-    // case 1: integer constant (like 5)
     if (token.Type == "integerConstant") {
       _vmWriter.writePush("constant", Integer.parseInt(token.Value))
       _pointer++
     }
-    // case 2: string constant (like "hello")
     else if (token.Type == "stringConstant") {
       var str = token.Value
 
-      // create a new string object
       _vmWriter.writePush("constant", str.length())
       _vmWriter.writeCall("String.new", 1)
       _vmWriter.writePop("temp", 1)
 
-      // append each character of the string one by one
       for (i in 0 ..| str.length()) {
         _vmWriter.writePush("temp", 1)
         _vmWriter.writePush("constant", str.charAt(i) as Integer)
@@ -476,72 +745,60 @@ class ParsingEngine {
         _vmWriter.writePop("temp", 1)
       }
 
-      // push the finished string to the stack
       _vmWriter.writePush("temp", 1)
       _pointer++
     }
-    // case 3: true constant (represented as -1 in VM)
     else if (token.Value == "true") {
       _vmWriter.writePush("constant", 0)
       _vmWriter.writeArithmetic("not")
       _pointer++
     }
-    // case 4: false or null constants (represented as 0)
     else if (token.Value == "false" || token.Value == "null") {
       _vmWriter.writePush("constant", 0)
       _pointer++
     }
-    // case 5: 'this' pointer
     else if (token.Value == "this") {
       _vmWriter.writePush("pointer", 0)
       _pointer++
     }
-    // case 6: expression inside brackets (like (x + 2))
     else if (token.Value == "(") {
       process("(")
       compileExpression()
       process(")")
     }
-    // case 7: unary operators (like -x or ~flag)
     else if (token.Value == "-" || token.Value == "~") {
       var unaryOp = token.Value
       _pointer++
       compileTerm()
 
-      // write the matching unary VM command
       if (unaryOp == "-") {
         _vmWriter.writeArithmetic("neg")
       } else {
         _vmWriter.writeArithmetic("not")
       }
     }
-    // case 8: identifiers (variables, arrays, or functions)
     else if (token.Type == "identifier") {
       var nextToken = NextToken()
 
-      // sub-case 8.1: reading from an array index (like arr[i])
       if (nextToken.Value == "[") {
         process(token.Value)
         process("[")
         compileExpression()
         process("]")
 
-        // get array details and push base address
         var seg = _symbolTable.catOf(token.Value)
         var idx = _symbolTable.indexOf(token.Value)
         if (seg == "var") seg = "local"
         if (seg == "field") seg = "this"
 
-        _vmWriter.writePush(seg, idx)
-        _vmWriter.writeArithmetic("add")
-        _vmWriter.writePop("pointer", 1)  // set 'that' pointer to this address
-        _vmWriter.writePush("that", 0)   // push the actual value from the array
+        _vmWriter.writePush(seg, idx)     // דוחף את כתובת הבסיס של המערך למחסנית
+        _vmWriter.writeArithmetic("add")  // מחשב: כתובת בסיס + אינדקס
+        _vmWriter.writePop("pointer", 1)  // שומר את הכתובת הסופית בתוך הפוינטר THAT
+        _vmWriter.writePush("that", 0)    // דוחף למחסנית את הערך האמיתי שיושב בכתובת הזו!
       }
-      // sub-case 8.2: method or function call
       else if (nextToken.Value == "(" || nextToken.Value == ".") {
         compileSubroutineCall()
       }
-      // sub-case 8.3: regular single variable
       else {
         var name = token.Value
         var segment = _symbolTable.catOf(name)
@@ -556,7 +813,26 @@ class ParsingEngine {
     }
   }
 
-  // compile a subroutine call (like do method() or do Class.function())
+  /*function compileSubroutineCall() {
+    var name = currentToken()
+    process(name.Value)
+
+    if (currentToken().Value == "(") {
+      process("(")
+      compileExpressionList()
+      process(")")
+    }
+    else if (currentToken().Value == ".") {
+      process(".")
+
+      var subroutineName = currentToken()
+      process(subroutineName.Value) // Process the actual function varName after the dot
+
+      process("(")
+      compileExpressionList()
+      process(")")
+    }
+  }*/
   function compileSubroutineCall() {
     var firstName = currentToken().Value
     _pointer++
@@ -564,20 +840,17 @@ class ParsingEngine {
     var fullSubroutineName = ""
     var nArgs = 0
 
-    // case 1: calling a local method of the current class (like draw())
     if (currentToken().Value == "(") {
       process("(")
 
-      // push 'this' as the first argument because it is a method call
       _vmWriter.writePush("pointer", 0)
       nArgs = 1
 
       fullSubroutineName = _currentClassName + "." + firstName
-      nArgs += compileExpressionList()  // compile arguments inside brackets
+      nArgs += compileExpressionList()
       process(")")
     }
 
-    // case 2: calling a method on an object or a static function (like ball.move() or Math.abs())
     else if (currentToken().Value == ".") {
       process(".")
       var subroutineName = currentToken().Value
@@ -587,7 +860,6 @@ class ParsingEngine {
 
       var variableSegment = _symbolTable.catOf(firstName)
 
-      // if firstName is an object variable (method call)
       if (variableSegment != "NONE") {
         var variableIndex = _symbolTable.indexOf(firstName)
         var variableType = _symbolTable.typeOf(firstName)
@@ -598,10 +870,8 @@ class ParsingEngine {
         _vmWriter.writePush(variableSegment, variableIndex)
         nArgs = 1
 
-        // the call will be ClassName.subroutineName
         fullSubroutineName = variableType + "." + subroutineName
       } else {
-        // if firstName is a class name (static function call like Math.abs)
         fullSubroutineName = firstName + "." + subroutineName
         nArgs = 0
       }
@@ -609,27 +879,38 @@ class ParsingEngine {
       nArgs += compileExpressionList()
       process(")")
     }
-    // write the VM call command with the total number of arguments
+
     _vmWriter.writeCall(fullSubroutineName, nArgs)
   }
 
-  // compile a list of expressions separated by commas and return the total count
+  /*function compileExpressionList() {
+    _writer.println("<expressionList>")
+
+    if (currentToken().Value != ")") {
+
+      compileExpression()
+
+      while (currentToken().Value == ",") {
+        process(",")
+        compileExpression()
+      }
+    }
+
+    _writer.println("</expressionList>")
+  }*/
   function compileExpressionList() : int {
     var count = 0
 
-    // check if there are any arguments inside the brackets
     if (currentToken().Value != ")") {
       compileExpression()
       count++
 
-      // loop through the rest of the expressions if they are separated by commas
       while (currentToken().Value == ",") {
         process(",")
         compileExpression()
         count++
       }
     }
-    // return the total number of arguments compiled
     return count
   }
 }
